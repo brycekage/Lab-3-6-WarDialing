@@ -81,6 +81,11 @@ def is_server_at_hostname(hostname):
     but it would also make scanning take much longer.
     5 seconds is a reasonable tradeoff between these extremes.
     '''
+    try:
+        response = requests.get(f"http://{hostname}", timeout=5)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
 
 
 def increment_ip(ip):
@@ -104,6 +109,19 @@ def increment_ip(ip):
     >>> increment_ip('255.255.255.255')
     '0.0.0.0'
     '''
+    holder = ip.split(".")
+    nums = [int(h) for h in holder]
+
+    # Add 1 with carry from right to left
+    nums[3] += 1
+    for i in range(3, -1, -1):
+        if nums[i] <= 255:
+            break
+        nums[i] = 0
+        if i > 0:
+            nums[i - 1] += 1
+
+    return ".".join(str(n) for n in nums)
 
 
 def enumerate_ips(start_ip, n):
@@ -130,7 +148,15 @@ def enumerate_ips(start_ip, n):
     >>> len(list(enumerate_ips('8.8.8.8', 100000)))
     100000
     '''
+    nextIPS = []
+    current_ip = start_ip
+    for _ in range(n):
+        nextIPS.append(current_ip)
+        current_ip = increment_ip(current_ip)
+    return nextIPS
 
+
+if __name__ == '__main__':
 
 ########################################
 # FIXME 1:
@@ -138,7 +164,7 @@ def enumerate_ips(start_ip, n):
 # Recall that the DPRK is assigned all IP addresses in the range from `175.45.176.0` to `175.45.179.255` (1024 IPs in total).
 # You should use your `enumerate_ips` function that you created above.
 ########################################
-dprk_ips = []
+    dprk_ips = enumerate_ips('175.45.176.0', 1024)
 
 
 ########################################
@@ -164,7 +190,13 @@ dprk_ips = []
 # If you go on to take the CS46 class (data structures) next semester,
 # you'll learn how to write this parallel code.
 ########################################
-dprk_ips_with_servers = []
+    dprk_ips_with_servers = []
+    count = 0
+    for ip in dprk_ips:
+        count += 1
+        print(f"Scanning ip #", count, "{ip}...")
+        if is_server_at_hostname(ip):
+            dprk_ips_with_servers.append(ip)
 
 
 ########################################
@@ -172,7 +204,7 @@ dprk_ips_with_servers = []
 # the following code should output the list of IP addresses.
 # You don't have to modify anything here.
 ########################################
-print('dprk_ips_with_servers=', dprk_ips_with_servers)
+    print('dprk_ips_with_servers=', dprk_ips_with_servers)
 
 ########################################
 # FIXME 3:
